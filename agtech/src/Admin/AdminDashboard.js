@@ -19,6 +19,8 @@ import {
   FormControl,
   InputLabel,
   alpha,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import BarChartIcon from "@mui/icons-material/BarChart";
@@ -30,8 +32,6 @@ import PercentIcon from "@mui/icons-material/Percent";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import { useTheme } from "@mui/material/styles";
 import { AdminAPI } from "../api/adminApi";
-
-// OPTIONAL: run `npm i recharts` (or `yarn add recharts`)
 import {
   ResponsiveContainer,
   BarChart,
@@ -45,78 +45,76 @@ import {
   Legend,
 } from "recharts";
 
+const MAX_WIDTH = 1400;
 const COLORS = ["#2e7d32", "#43a047", "#66bb6a", "#81c784", "#a5d6a7", "#c5e1a5"];
 
 const StatCard = ({ label, value, icon, loading, accent = "success" }) => {
   const theme = useTheme();
   return (
     <Paper
-      elevation={3}
+      elevation={2}
       sx={{
-        p: 2.2,
+        p: 2,
         borderRadius: 3,
         position: "relative",
         overflow: "hidden",
-        minHeight: 122,
+        minHeight: 112,
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
         background:
           theme.palette.mode === "dark"
-            ? "linear-gradient(145deg,#16251d,#1d3126)"
-            : "linear-gradient(145deg,#ffffff,#f2faf3)",
+            ? "linear-gradient(150deg,#192a21,#15241d)"
+            : "linear-gradient(150deg,#ffffff,#f5faf5)",
         "&:before": {
           content: '""',
-            position: "absolute",
+          position: "absolute",
           inset: 0,
           background: `radial-gradient(circle at 85% 15%, ${alpha(
             theme.palette[accent]?.main || theme.palette.success.main,
-            0.18
+            0.14
           )}, transparent 70%)`,
           pointerEvents: "none",
         },
       }}
     >
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+      <Stack direction="row" justifyContent="space-between">
         <Typography
           variant="caption"
-          sx={{
-            fontWeight: 600,
-            letterSpacing: 0.7,
-            opacity: 0.65,
-          }}
+          sx={{ fontWeight: 600, letterSpacing: 0.6, opacity: 0.6 }}
         >
           {label.toUpperCase()}
         </Typography>
         <Box
           sx={{
-            width: 34,
-            height: 34,
+            width: 30,
+            height: 30,
             borderRadius: "50%",
             display: "grid",
             placeItems: "center",
             bgcolor: alpha(
               theme.palette[accent]?.main || theme.palette.success.main,
-              0.12
+              0.15
             ),
             color: theme.palette[accent]?.main || theme.palette.success.main,
+            fontSize: 16,
           }}
         >
           {icon}
         </Box>
       </Stack>
       <Typography
-        variant="h4"
+        variant="h5"
         sx={{
           fontWeight: 800,
-          lineHeight: 1.1,
-          mt: 0.6,
+          lineHeight: 1.15,
+          mt: 0.7,
           background: "linear-gradient(90deg,#2e7d32,#43a047,#66bb6a)",
           WebkitBackgroundClip: "text",
           color: "transparent",
         }}
       >
-        {loading ? <Skeleton width={60} /> : value}
+        {loading ? <Skeleton width={50} /> : value}
       </Typography>
     </Paper>
   );
@@ -126,7 +124,7 @@ const EmptyState = ({ message }) => (
   <Box
     sx={{
       textAlign: "center",
-      py: 6,
+      py: 4,
       opacity: 0.7,
       fontStyle: "italic",
       fontSize: 14,
@@ -142,10 +140,11 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({ total_farmers: 0, total_crops: 0 });
   const [chartData, setChartData] = useState([]);
   const [error, setError] = useState("");
-  const [chartType, setChartType] = useState("bar"); // "bar" | "pie"
-  const [viewMode, setViewMode] = useState("absolute"); // "absolute" | "percentage"
-  const [farmerLimit, setFarmerLimit] = useState("top10"); // filtering option
+  const [chartType, setChartType] = useState("bar");
+  const [viewMode, setViewMode] = useState("absolute");
+  const [farmerLimit, setFarmerLimit] = useState("top10");
   const [lastLoaded, setLastLoaded] = useState(null);
+  const [dense, setDense] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -171,13 +170,11 @@ const AdminDashboard = () => {
 
   const processedChartData = useMemo(() => {
     if (!chartData?.length) return [];
-    let data = [...chartData];
-    // sort descending by total_crops
-    data.sort((a, b) => b.total_crops - a.total_crops);
+    let data = [...chartData].sort((a, b) => b.total_crops - a.total_crops);
     if (farmerLimit === "top5") data = data.slice(0, 5);
     else if (farmerLimit === "top10") data = data.slice(0, 10);
     if (viewMode === "percentage") {
-      const total = data.reduce((sum, d) => sum + d.total_crops, 0) || 1;
+      const total = data.reduce((s, d) => s + d.total_crops, 0) || 1;
       return data.map((d) => ({
         ...d,
         displayValue: ((d.total_crops / total) * 100).toFixed(1),
@@ -191,61 +188,72 @@ const AdminDashboard = () => {
     }));
   }, [chartData, farmerLimit, viewMode]);
 
-  const maxValue = useMemo(
+  const avgCropsPerFarmer = useMemo(
     () =>
-      processedChartData.length
-        ? Math.max(...processedChartData.map((d) => Number(d.displayValue)))
+      stats.total_farmers
+        ? (stats.total_crops / stats.total_farmers).toFixed(1)
         : 0,
-    [processedChartData]
+    [stats]
   );
 
-  const avgCropsPerFarmer = useMemo(() => {
-    if (!stats.total_farmers) return 0;
-    return (stats.total_crops / stats.total_farmers).toFixed(1);
-  }, [stats]);
-
   const diversityIndex = useMemo(() => {
-    // Simple measure: (#farmers with >=1 crop / total farmers) * 100
     if (!stats.total_farmers) return 0;
     const active = chartData.filter((c) => c.total_crops > 0).length;
     return ((active / stats.total_farmers) * 100).toFixed(1);
   }, [chartData, stats]);
 
-  const headerGradient =
-    theme.palette.mode === "dark"
-      ? "linear-gradient(90deg,#144d2b,#1c6b3b,#228b22)"
-      : "linear-gradient(90deg,#e8f5e9,#ffffff)";
+  const sectionPaperProps = {
+    elevation: 2,
+    sx: {
+      p: dense ? 2 : 2.6,
+      borderRadius: 3,
+      background:
+        theme.palette.mode === "dark"
+          ? "linear-gradient(150deg,#182720,#14211b)"
+          : "linear-gradient(150deg,#ffffff,#f7fbf7)",
+      transition: "padding 200ms",
+    },
+  };
 
   return (
-    <Box>
-      {/* Hero Header */}
+    <Box
+      sx={{
+        maxWidth: MAX_WIDTH,
+        mx: "auto",
+        pb: 4,
+      }}
+    >
+      {/* Header */}
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 2.5, md: 3 },
-          mb: 3.5,
+          p: { xs: 2.2, md: 2.8 },
+          mb: 3,
           borderRadius: 4,
-          background: headerGradient,
           position: "relative",
           overflow: "hidden",
+          background:
+            theme.palette.mode === "dark"
+              ? "linear-gradient(90deg,#144d2b,#1c6b3b,#228b22)"
+              : "linear-gradient(90deg,#e8f5e9,#ffffff)",
           "&:before": {
             content: '""',
             position: "absolute",
-            width: 280,
-            height: 280,
-            top: -80,
-            right: -60,
+            width: 240,
+            height: 240,
+            top: -70,
+            right: -50,
             background:
-              "radial-gradient(circle at center, rgba(76,175,80,0.35), transparent 70%)",
+              "radial-gradient(circle at center, rgba(76,175,80,0.28), transparent 70%)",
             filter: "blur(8px)",
           },
         }}
       >
         <Stack
           direction={{ xs: "column", md: "row" }}
-          alignItems={{ xs: "flex-start", md: "center" }}
+          spacing={2.2}
           justifyContent="space-between"
-          gap={2.5}
+          alignItems={{ xs: "flex-start", md: "center" }}
         >
           <Box>
             <Typography
@@ -263,22 +271,27 @@ const AdminDashboard = () => {
             </Typography>
             <Typography
               variant="body2"
-              sx={{ opacity: 0.7, maxWidth: 560, mt: 0.6 }}
+              sx={{ opacity: 0.7, maxWidth: 560, mt: 0.4 }}
             >
-              Real‑time snapshot of platform farming activity, crop distribution
-              and farmer engagement. Use filters to explore data visually.
+              Snapshot of platform activity and crop distribution. Adjust filters
+              to explore farmer contribution patterns.
             </Typography>
             {lastLoaded && (
               <Typography
                 variant="caption"
-                sx={{ opacity: 0.55, display: "block", mt: 0.8 }}
+                sx={{ opacity: 0.55, display: "block", mt: 0.6 }}
               >
                 Last updated: {lastLoaded.toLocaleTimeString()}
               </Typography>
             )}
           </Box>
 
-          <Stack direction="row" spacing={1.2} flexWrap="wrap">
+          <Stack
+            direction="row"
+            spacing={1}
+            flexWrap="wrap"
+            alignItems="center"
+          >
             <Tooltip title="Reload data">
               <span>
                 <IconButton
@@ -308,10 +321,10 @@ const AdminDashboard = () => {
                 borderRadius: 3,
               }}
             >
-              <ToggleButton value="bar" sx={{ px: 1.6 }}>
+              <ToggleButton value="bar" sx={{ px: 1.4 }}>
                 <BarChartIcon fontSize="small" />
               </ToggleButton>
-              <ToggleButton value="pie" sx={{ px: 1.6 }}>
+              <ToggleButton value="pie" sx={{ px: 1.4 }}>
                 <PieChartIcon fontSize="small" />
               </ToggleButton>
             </ToggleButtonGroup>
@@ -326,19 +339,15 @@ const AdminDashboard = () => {
                 borderRadius: 3,
               }}
             >
-              <ToggleButton value="absolute" sx={{ px: 1.5 }}>
+              <ToggleButton value="absolute" sx={{ px: 1.4 }}>
                 Abs
               </ToggleButton>
-              <ToggleButton value="percentage" sx={{ px: 1.5 }}>
+              <ToggleButton value="percentage" sx={{ px: 1.4 }}>
                 %
               </ToggleButton>
             </ToggleButtonGroup>
 
-            <FormControl
-              size="small"
-              sx={{ minWidth: 110 }}
-              variant="outlined"
-            >
+            <FormControl size="small" sx={{ minWidth: 100 }}>
               <InputLabel>
                 <FilterAltIcon fontSize="small" sx={{ mr: 0.3 }} />
                 Limit
@@ -353,6 +362,18 @@ const AdminDashboard = () => {
                 <MenuItem value="top5">Top 5</MenuItem>
               </Select>
             </FormControl>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  size="small"
+                  checked={dense}
+                  onChange={(e) => setDense(e.target.checked)}
+                />
+              }
+              label="Dense"
+              sx={{ ml: 1 }}
+            />
           </Stack>
         </Stack>
       </Paper>
@@ -373,7 +394,8 @@ const AdminDashboard = () => {
         </Paper>
       )}
 
-      <Grid container spacing={3} sx={{ mb: 0.5 }}>
+      {/* KPI CARDS */}
+      <Grid container spacing={2.2} sx={{ mb: 2.5 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             label="Total Farmers"
@@ -410,294 +432,286 @@ const AdminDashboard = () => {
         </Grid>
       </Grid>
 
-      <Grid container spacing={3} alignItems="stretch">
-        <Grid item xs={12} md={7}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 2.7,
-              borderRadius: 3,
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              gap: 1.2,
-              background:
-                theme.palette.mode === "dark"
-                  ? "linear-gradient(145deg,#182820,#15241d)"
-                  : "linear-gradient(145deg,#ffffff,#f6faf5)",
-            }}
+      {/* CHART SECTION */}
+      <Paper {...sectionPaperProps} sx={{ ...sectionPaperProps.sx, mb: 2.5 }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+          spacing={1.5}
+          mb={dense ? 1 : 1.5}
+        >
+          <Typography
+            variant="subtitle1"
+            sx={{ fontWeight: 700, letterSpacing: 0.5 }}
           >
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              flexWrap="wrap"
-              spacing={1.5}
-            >
-              <Typography
-                variant="subtitle1"
-                sx={{ fontWeight: 700, letterSpacing: 0.5 }}
-              >
-                Crops per Farmer ({viewMode === "percentage" ? "%" : "count"})
-              </Typography>
-              <Chip
-                size="small"
-                variant="outlined"
-                label={
-                  processedChartData.length
-                    ? `${processedChartData.length} farmers`
-                    : "No data"
-                }
+            Crops per Farmer ({viewMode === "percentage" ? "%" : "count"})
+          </Typography>
+          <Chip
+            size="small"
+            variant="outlined"
+            label={
+              processedChartData.length
+                ? `${processedChartData.length} farmers`
+                : "No data"
+            }
+          />
+        </Stack>
+        <Divider sx={{ mb: dense ? 1.2 : 1.8 }} />
+        <Box
+          sx={{
+            width: "100%",
+            height: {
+              xs: dense ? 260 : 300,
+              sm: dense ? 300 : 340,
+              md: dense ? 320 : 370,
+            },
+          }}
+        >
+          {loading && (
+            <Box sx={{ mt: 1 }}>
+              <LinearProgress />
+              <Skeleton
+                variant="rounded"
+                height="80%"
+                sx={{ mt: 2, borderRadius: 3 }}
               />
-            </Stack>
-            <Divider />
-
-            <Box sx={{ flexGrow: 1, minHeight: 320 }}>
-              {loading && (
-                <Box sx={{ mt: 2 }}>
-                  <LinearProgress />
-                  <Skeleton
-                    variant="rounded"
-                    height={260}
-                    sx={{ mt: 2, borderRadius: 3 }}
-                  />
-                </Box>
-              )}
-
-              {!loading && !processedChartData.length && (
-                <EmptyState message="No crop distribution data yet." />
-              )}
-
-              {!loading && processedChartData.length > 0 && (
-                <Fade in timeout={600}>
-                  <Box sx={{ width: "100%", height: 320 }}>
-                    {chartType === "bar" ? (
-                      <ResponsiveContainer>
-                        <BarChart
-                          data={processedChartData}
-                          margin={{ top: 10, right: 10, left: -15, bottom: 35 }}
-                        >
-                          <XAxis
-                            dataKey="username"
-                            tick={{ fontSize: 11 }}
-                            interval={0}
-                            angle={-25}
-                            dy={20}
-                            height={60}
-                          />
-                          <YAxis
-                            tick={{ fontSize: 11 }}
-                            width={38}
-                            allowDecimals={false}
-                            label={{
-                              value:
-                                viewMode === "percentage" ? "% Share" : "Crops",
-                              angle: -90,
-                              position: "insideLeft",
-                              fontSize: 11,
-                            }}
-                          />
-                          <ReTooltip
-                            cursor={{ fill: alpha(theme.palette.primary.main, 0.05) }}
-                            formatter={(val) =>
-                              viewMode === "percentage" ? `${val}%` : val
-                            }
-                          />
-                          <Bar
-                            dataKey={viewMode === "percentage" ? "displayValue" : "displayValue"}
-                            isAnimationActive
-                            animationDuration={700}
-                            radius={[6, 6, 0, 0]}
-                            fill="url(#cropGradient)"
-                          />
-                          <defs>
-                            <linearGradient id="cropGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop
-                                offset="0%"
-                                stopColor={theme.palette.success.dark}
-                                stopOpacity={0.85}
-                              />
-                              <stop
-                                offset="100%"
-                                stopColor={theme.palette.success.light}
-                                stopOpacity={0.65}
-                              />
-                            </linearGradient>
-                          </defs>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <ResponsiveContainer>
-                        <PieChart>
-                          <Pie
-                            data={processedChartData}
-                            dataKey="displayValue"
-                            nameKey="username"
-                            innerRadius={60}
-                            outerRadius={110}
-                            paddingAngle={2}
-                            startAngle={90}
-                            endAngle={-270}
-                          >
-                            {processedChartData.map((entry, index) => (
-                              <Cell
-                                key={entry.username}
-                                fill={
-                                  COLORS[index % COLORS.length] ||
-                                  theme.palette.success.main
-                                }
-                              />
-                            ))}
-                          </Pie>
-                          <Legend
-                            verticalAlign="bottom"
-                            height={64}
-                            iconSize={10}
-                            wrapperStyle={{ fontSize: 11 }}
-                          />
-                          <ReTooltip
-                            formatter={(val, _, payload) =>
-                              viewMode === "percentage"
-                                ? [`${val}%`, payload?.payload?.username]
-                                : [val, payload?.payload?.username]
-                            }
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    )}
-                  </Box>
-                </Fade>
-              )}
             </Box>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={5}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 2.7,
-              borderRadius: 3,
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              gap: 1.5,
-              background:
-                theme.palette.mode === "dark"
-                  ? "linear-gradient(145deg,#1b2b23,#16231d)"
-                  : "linear-gradient(145deg,#ffffff,#f6faf5)",
-            }}
-          >
-            <Typography
-              variant="subtitle1"
-              sx={{ fontWeight: 700, letterSpacing: 0.5 }}
-            >
-              Distribution Insights
-            </Typography>
-            <Divider />
-            {loading && (
-              <Box>
-                <Skeleton height={28} />
-                <Skeleton height={28} />
-                <Skeleton height={28} />
-                <Skeleton height={28} />
-              </Box>
-            )}
-            {!loading && processedChartData.length === 0 && (
-              <EmptyState message="No insights available yet." />
-            )}
-            {!loading && processedChartData.length > 0 && (
-              <Stack spacing={1.4}>
-                {processedChartData.map((row, i) => {
-                  const share =
-                    viewMode === "percentage"
-                      ? row.displayValue
-                      : (
-                          (row.total_crops /
-                            (stats.total_crops || 1)) *
-                          100
-                        ).toFixed(1);
-                  return (
-                    <Box
-                      key={row.username}
-                      sx={{
-                        p: 1.2,
-                        borderRadius: 2.5,
-                        background: alpha(
-                          COLORS[i % COLORS.length],
-                          theme.palette.mode === "dark" ? 0.18 : 0.12
-                        ),
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 0.6,
+          )}
+          {!loading && !processedChartData.length && (
+            <EmptyState message="No crop distribution data yet." />
+          )}
+          {!loading && processedChartData.length > 0 && (
+            <Fade in timeout={600}>
+              <Box sx={{ width: "100%", height: "100%" }}>
+                {chartType === "bar" ? (
+                  <ResponsiveContainer>
+                    <BarChart
+                      data={processedChartData}
+                      margin={{
+                        top: 10,
+                        right: 10,
+                        left: -15,
+                        bottom: dense ? 25 : 40,
                       }}
                     >
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        spacing={1}
-                        flexWrap="wrap"
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 600, fontSize: 13.5 }}
-                        >
-                          {row.username}
-                        </Typography>
-                        <Chip
-                          size="small"
-                          label={
-                            viewMode === "percentage"
-                              ? `${row.displayValue}%`
-                              : `${row.total_crops} crops`
-                          }
-                          sx={{
-                            fontSize: 11,
-                            bgcolor: alpha(
-                              COLORS[i % COLORS.length],
-                              theme.palette.mode === "dark" ? 0.35 : 0.25
-                            ),
-                            color: "#fff",
-                          }}
-                        />
-                      </Stack>
-                      <Box
-                        sx={{
-                          position: "relative",
-                          height: 6,
-                          borderRadius: 3,
-                          overflow: "hidden",
-                          bgcolor: alpha(
-                            theme.palette.text.primary,
-                            theme.palette.mode === "dark" ? 0.2 : 0.08
-                          ),
+                      <XAxis
+                        dataKey="username"
+                        tick={{ fontSize: 11 }}
+                        interval={0}
+                        angle={-25}
+                        dy={dense ? 15 : 18}
+                        height={dense ? 50 : 65}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11 }}
+                        width={38}
+                        allowDecimals={false}
+                        label={{
+                          value:
+                            viewMode === "percentage" ? "% Share" : "Crops",
+                          angle: -90,
+                          position: "insideLeft",
+                          fontSize: 11,
                         }}
+                      />
+                      <ReTooltip
+                        cursor={{
+                          fill: alpha(theme.palette.primary.main, 0.05),
+                        }}
+                        formatter={(val) =>
+                          viewMode === "percentage" ? `${val}%` : val
+                        }
+                      />
+                      <Bar
+                        dataKey="displayValue"
+                        isAnimationActive
+                        animationDuration={700}
+                        radius={[6, 6, 0, 0]}
+                        fill="url(#cropGradient)"
+                        maxBarSize={dense ? 40 : 55}
+                      />
+                      <defs>
+                        <linearGradient
+                          id="cropGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor={theme.palette.success.dark}
+                            stopOpacity={0.85}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor={theme.palette.success.light}
+                            stopOpacity={0.65}
+                          />
+                        </linearGradient>
+                      </defs>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie
+                        data={processedChartData}
+                        dataKey="displayValue"
+                        nameKey="username"
+                        innerRadius={dense ? 50 : 60}
+                        outerRadius={dense ? 90 : 110}
+                        paddingAngle={2}
+                        startAngle={90}
+                        endAngle={-270}
                       >
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            inset: 0,
-                            width: `${share}%`,
-                            background: COLORS[i % COLORS.length],
-                            transition: "width 500ms",
-                          }}
-                        />
-                      </Box>
-                      <Typography
-                        variant="caption"
-                        sx={{ opacity: 0.65, fontSize: 11.5 }}
-                      >
-                        Share: {share}%
-                      </Typography>
-                    </Box>
-                  );
-                })}
-              </Stack>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
+                        {processedChartData.map((entry, index) => (
+                          <Cell
+                            key={entry.username}
+                            fill={
+                              COLORS[index % COLORS.length] ||
+                              theme.palette.success.main
+                            }
+                          />
+                        ))}
+                      </Pie>
+                      <Legend
+                        verticalAlign="bottom"
+                        height={dense ? 48 : 60}
+                        iconSize={10}
+                        wrapperStyle={{ fontSize: 11 }}
+                      />
+                      <ReTooltip
+                        formatter={(val, _, payload) =>
+                          viewMode === "percentage"
+                            ? [`${val}%`, payload?.payload?.username]
+                            : [val, payload?.payload?.username]
+                        }
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </Box>
+            </Fade>
+          )}
+        </Box>
+      </Paper>
+
+      {/* DISTRIBUTION INSIGHTS */}
+      <Paper {...sectionPaperProps}>
+        <Typography
+          variant="subtitle1"
+          sx={{ fontWeight: 700, letterSpacing: 0.5, mb: dense ? 1 : 1.4 }}
+        >
+          Distribution Insights
+        </Typography>
+        <Divider sx={{ mb: dense ? 1.4 : 2 }} />
+        {loading && (
+          <Box>
+            <Skeleton height={28} />
+            <Skeleton height={28} />
+            <Skeleton height={28} />
+            <Skeleton height={28} />
+          </Box>
+        )}
+        {!loading && processedChartData.length === 0 && (
+          <EmptyState message="No insights available yet." />
+        )}
+        {!loading && processedChartData.length > 0 && (
+          <Stack spacing={dense ? 1 : 1.4}>
+            {processedChartData.map((row, i) => {
+              const share =
+                viewMode === "percentage"
+                  ? row.displayValue
+                  : (
+                      (row.total_crops / (stats.total_crops || 1)) *
+                      100
+                    ).toFixed(1);
+              return (
+                <Box
+                  key={row.username}
+                  sx={{
+                    p: dense ? 1 : 1.15,
+                    borderRadius: 2.5,
+                    background: alpha(
+                      COLORS[i % COLORS.length],
+                      theme.palette.mode === "dark" ? 0.17 : 0.12
+                    ),
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.55,
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    spacing={1}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 600, fontSize: 13.5 }}
+                    >
+                      {row.username}
+                    </Typography>
+                    <Chip
+                      size="small"
+                      label={
+                        viewMode === "percentage"
+                          ? `${row.displayValue}%`
+                          : `${row.total_crops} crops`
+                      }
+                      sx={{
+                        fontSize: 11,
+                        bgcolor: alpha(
+                          COLORS[i % COLORS.length],
+                          theme.palette.mode === "dark" ? 0.35 : 0.25
+                        ),
+                        color: "#fff",
+                        height: dense ? 20 : 22,
+                      }}
+                    />
+                  </Stack>
+                  <Box
+                    sx={{
+                      position: "relative",
+                      height: dense ? 5 : 6,
+                      borderRadius: 3,
+                      overflow: "hidden",
+                      bgcolor: alpha(
+                        theme.palette.text.primary,
+                        theme.palette.mode === "dark" ? 0.2 : 0.08
+                      ),
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        inset: 0,
+                        width: `${share}%`,
+                        background: COLORS[i % COLORS.length],
+                        transition: "width 500ms",
+                      }}
+                    />
+                  </Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      opacity: 0.6,
+                      fontSize: 11.2,
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    Share: {share}%
+                  </Typography>
+                </Box>
+              );
+            })}
+          </Stack>
+        )}
+      </Paper>
     </Box>
   );
 };
