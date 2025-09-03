@@ -13,8 +13,11 @@ import {
 } from "@mui/material";
 import axios from "axios";
 
+import { useNavigate } from "react-router-dom"; 
+
 export default function FarmerLogin() {
   const apiUrl = process.env.REACT_APP_API_URL || "";
+  const navigate = useNavigate(); 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -45,17 +48,26 @@ export default function FarmerLogin() {
     try {
       const response = await axios.post(`${apiUrl}/login/`, formData);
 
-      // Assuming backend returns access token
-      const { access_token } = response.data;
-      localStorage.setItem("access_token", access_token);
+      console.log("Login Response:", response.data);
+
+
+       // ✅ If using Django SimpleJWT
+       if (response.data.access && response.data.refresh) {
+        localStorage.setItem("access_token", response.data.access);
+        localStorage.setItem("refresh_token", response.data.refresh);
+      }
+      // ✅ If backend uses access_token instead
+      else if (response.data.access_token) {
+        localStorage.setItem("access_token", response.data.access_token);
+      }
 
       setSnackbarMessage("✅ Login successful!");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
       setMessage("");
 
-      // Optional: redirect to dashboard
-      window.location.href = "/farmer/dashboard";
+       // ✅ use navigate instead of window.location.href
+       navigate("/farmer/dashboard");
     } catch (err) {
       console.error("Login Error:", err);
 
