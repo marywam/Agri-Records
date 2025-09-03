@@ -1,13 +1,3 @@
-// FarmerProfile (Editable username & email version + Gender dropdown)
-// Notes:
-//  - Gender is now a dropdown (select) matching backend choices: male/female/other.
-//  - Your backend UserProfileSerializer currently has: read_only_fields = ["email", "role"]
-//    If you want email to be editable, remove "email" from read_only_fields in the serializer.
-//  - If USERNAME_FIELD=email, changing email may require re-auth or token refresh.
-//  - Username & Email validation kept; gender validation unchanged (auto valid because of fixed options).
-//
-// Dependencies: @mui/material @mui/icons-material axios react
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
@@ -18,13 +8,10 @@ import {
   Grid,
   Alert,
   Avatar,
-  IconButton,
   Divider,
   Stack,
   Chip,
   Collapse,
-  Tooltip,
-  LinearProgress,
   Skeleton,
   InputAdornment,
   FormControl,

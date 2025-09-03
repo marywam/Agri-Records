@@ -13,12 +13,10 @@ import {
   IconButton,
   InputAdornment,
   Fade,
-  Stack,
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import LoginIcon from "@mui/icons-material/Login";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import heroImage from "../src/assets/Agri.jpeg"; // Ensure path is correct
@@ -95,12 +93,6 @@ export default function Login() {
     try {
       const response = await axios.post(`${apiUrl}/login/`, formData);
 
-      // Expected backend shape from your code:
-      // {
-      //   refresh: "...",
-      //   access: "...",
-      //   user: { id, email, username, role }
-      // }
       persistAuth(response.data);
 
       const role = response.data?.user?.role;

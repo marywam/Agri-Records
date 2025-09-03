@@ -38,7 +38,7 @@ import axios from "axios";
 
 const FarmerCrop = () => {
   const theme = useTheme();
-  const isSmall = /xs|sm/.test(theme.breakpoints.keys.join()); // not used; we use useMediaQuery alternative below if desired
+  
   // Better: dynamic media query
   const isMobile = window.matchMedia(`(max-width:${theme.breakpoints.values.md - 1}px)`).matches;
 

@@ -1,7 +1,3 @@
-// FarmerDashboard (centered metric cards -> Crops by Type -> row: Harvest Progress + Distribution -> Recent Crops)
-// Dark/Light mode toggle REMOVED (moved to sidebar/topbar as per request).
-// Requirements: @mui/material @mui/icons-material recharts axios react-countup
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
