@@ -34,7 +34,7 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+
 import RefreshIcon from "@mui/icons-material/Refresh";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import PlaceIcon from "@mui/icons-material/Place";
@@ -55,7 +55,6 @@ const initialProfileShape = {
   farm_size: "",
   date_of_birth: "",
   gender: "",
-  avatar_url: "",
 };
 
 const emailRegex = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
@@ -315,53 +314,23 @@ const FarmerProfile = () => {
           alignItems={{ xs: "center", sm: "flex-start" }}
         >
           <Box position="relative">
-            <Avatar
-              alt={profile.username || ""}
-              src={avatarPreview || ""}
-              sx={{
-                width: 108,
-                height: 108,
-                fontSize: 40,
-                bgcolor: "success.main",
-              }}
-            >
-              {!avatarPreview &&
-                (profile.first_name?.[0] || profile.username?.[0] || "F")}
-            </Avatar>
-            <Tooltip title="Upload new avatar">
-              <IconButton
-                size="small"
-                component="label"
-                sx={{
-                  position: "absolute",
-                  bottom: 2,
-                  right: 2,
-                  bgcolor: "background.paper",
-                  border: (t) => `1px solid ${t.palette.divider}`,
-                  "&:hover": { bgcolor: "success.light", color: "#fff" },
-                }}
-                disabled={avatarUploading}
-              >
-                <CloudUploadIcon fontSize="small" />
-                <input
-                  type="file"
-                  hidden
-                  accept="image/*"
-                  onChange={handleAvatarSelect}
-                />
-              </IconButton>
-            </Tooltip>
-            {avatarUploading && (
-              <LinearProgress
-                sx={{
-                  position: "absolute",
-                  bottom: -6,
-                  left: 0,
-                  width: "100%",
-                  borderRadius: 2,
-                }}
-              />
-            )}
+           {/* Avatar WITHOUT upload */}
+          <Avatar
+            alt={profile.username || ""}
+            src={profile.avatar_url || undefined}
+            sx={{
+              width: 108,
+              height: 108,
+              fontSize: 40,
+              bgcolor: "success.main",
+            }}
+          >
+            {!profile.avatar_url &&
+              (profile.first_name?.[0] ||
+                profile.username?.[0] ||
+                "F")}
+          </Avatar>
+           
           </Box>
 
           <Box flex={1} minWidth={0}>
