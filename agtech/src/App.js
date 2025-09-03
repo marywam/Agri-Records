@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import FarmerRegister from "../src/Farmer/FarmerRegister";
-import FarmerLogin from "./Farmer/FarmerLogin";
+import FarmerLogin from "../src/Login";
 import FarmerSidebar from "./Farmer/FarmerSidebar";
 import FarmerProfile from "./Farmer/FarmerProfile";
 import FarmerCrop from "./Farmer/FarmerCrop";

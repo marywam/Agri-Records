@@ -37,7 +37,7 @@ import {
   LightMode as LightModeIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
-import logo from "../Farmer/Agri.jpeg";
+import logo from "../assets/Agri.jpeg";
 
 const drawerWidth = 240;
 
