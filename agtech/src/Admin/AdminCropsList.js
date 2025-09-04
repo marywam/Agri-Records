@@ -428,7 +428,7 @@ const AdminCropsList = () => {
 
                 <Divider sx={{ my: 0.5 }} />
 
-                <Grid container spacing={1}>
+                <Grid container spacing={2.5}>
                   <Grid item xs={6}>
                     <Typography variant="caption" sx={{ opacity: 0.6 }}>
                       Quantity
@@ -446,17 +446,18 @@ const AdminCropsList = () => {
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="caption" sx={{ opacity: 0.6 }}>
-                      Harvested
-                    </Typography>
-                    <Chip
-                      label={c.harvested ? "Yes" : "No"}
-                      size="small"
-                      color={c.harvested ? "success" : "warning"}
-                      variant={c.harvested ? "filled" : "outlined"}
-                      sx={{ mt: 0.2 }}
-                    />
-                  </Grid>
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+    <Typography variant="caption" sx={{ opacity: 0.6 }}>
+      Harvested
+    </Typography>
+    <Chip
+      label={c.harvested ? "Yes" : "No"}
+      size="small"
+      color={c.harvested ? "success" : "warning"}
+      variant={c.harvested ? "filled" : "outlined"}
+    />
+  </Box>
+</Grid>
                   <Grid item xs={6}>
                     <Typography variant="caption" sx={{ opacity: 0.6 }}>
                       FarmerID
