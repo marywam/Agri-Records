@@ -149,7 +149,7 @@ const [snackbarSeverity, setSnackbarSeverity] = useState("error"); // can be 'su
 
        // Redirect to login page after 2 seconds
        setTimeout(() => {
-        navigate("/login");
+        navigate("/");
       }, 2000);
       setStep(0);
     } catch (err) {
@@ -338,7 +338,7 @@ const [snackbarSeverity, setSnackbarSeverity] = useState("error"); // can be 'su
                 }}>
                 <Typography variant="body2">
                   Already have an account?{" "}
-                  <Link href="/login" underline="hover">
+                  <Link href="/" underline="hover">
                     Login
                   </Link>
                 </Typography>

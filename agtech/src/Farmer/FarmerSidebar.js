@@ -9,7 +9,7 @@ import {
   Typography,
   Box,
   AppBar,
-  
+
   Toolbar,
   IconButton,
   Avatar,
@@ -89,7 +89,7 @@ const FarmerSidebar = ({
     setTimeout(() => {
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
-      navigate("/login");
+      navigate("/");
     }, 1500);
   };
 

@@ -91,7 +91,7 @@ const AdminSidebar = ({
     ["access_token", "refresh_token", "user_role", "user_info"].forEach(
       (k) => localStorage.removeItem(k)
     );
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   };
 
   const fetchStats = useCallback(async () => {

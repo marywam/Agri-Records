@@ -303,7 +303,7 @@ export default function Login() {
             >
               <Typography variant="body2" sx={{ opacity: 0.75 }}>
                 New here?{" "}
-                <Link href="/" underline="hover">
+                <Link href="/register" underline="hover">
                   Create account
                 </Link>
               </Typography>

@@ -65,10 +65,10 @@ function App() {
       <Routes>
 
         {/* Farmer Registration route */}
-        <Route path="/" element={<FarmerRegister />} />
+        <Route path="/" element={<FarmerLogin />} />
 
          {/* Farmer login route */}
-        <Route path="/login" element={<FarmerLogin />} />
+        <Route path="/register" element={<FarmerRegister />} />
 
         {/* Farmer dashboard route with nested routes */}
         <Route path="/farmer/*" element={<FarmerDashboardLayout />} />
