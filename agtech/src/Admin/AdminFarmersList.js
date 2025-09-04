@@ -25,12 +25,25 @@ import {
   Divider,
   Grid,
   useMediaQuery,
+  Card,
+  CardContent,
+  SwipeableDrawer,
+  List,
+  ListItem,
+  ListItemText,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
+import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import AgricultureIcon from "@mui/icons-material/Agriculture";
+import WcIcon from "@mui/icons-material/Wc";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { useTheme } from "@mui/material/styles";
 import { AdminAPI } from "../api/adminApi";
 import FarmerFormDialog from "../Admin/AminFarmersFormDialog";
@@ -59,11 +72,17 @@ const AdminFarmersList = () => {
   const rowsPerPage = 8;
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState("add"); // 'add' | 'edit'
+  const [dialogMode, setDialogMode] = useState("add");
   const [formData, setFormData] = useState(blankAdd);
   const [saving, setSaving] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [feedback, setFeedback] = useState("");
+  const [selectedFarmer, setSelectedFarmer] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const theme = useTheme();
+  const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
+  const isXSmall = useMediaQuery("(max-width:350px)");
 
   const loadFarmers = useCallback(async () => {
     setLoading(true);
@@ -152,47 +171,67 @@ const AdminFarmersList = () => {
     }
   };
 
-  // --------- RESPONSIVE ADDITION (Small screen card view) ----------
-  const theme = useTheme();
-  const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
+  const handleCardClick = (farmer) => {
+    setSelectedFarmer(farmer);
+    setDrawerOpen(true);
+  };
 
-  // slice once so both table & cards use same paging
   const pagedData = filtered.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
 
   return (
-    <Box>
+    <Box sx={{ pb: isSmall ? 7 : 2 }}>
       <Box
         sx={{
-          mb: 3,
+          mb: 2,
+          px: isSmall ? 2 : 0,
           display: "flex",
-          flexWrap: "wrap",
+          flexDirection: isSmall ? "column" : "row",
           gap: 2,
-          alignItems: "center",
+          alignItems: isSmall ? "stretch" : "center",
           justifyContent: "space-between",
         }}
       >
         <Box>
           <Typography
-            variant="h5"
+            variant={isSmall ? "h6" : "h5"}
             sx={{
               fontWeight: 800,
               background: "linear-gradient(90deg,#2e7d32,#43a047)",
               WebkitBackgroundClip: "text",
               color: "transparent",
+              fontSize: isSmall ? "1.25rem" : "1.5rem",
             }}
           >
             Farmer Management
           </Typography>
+          {!isXSmall && (
             <Typography variant="body2" sx={{ opacity: 0.65 }}>
               View, add, edit, and delete farmer accounts.
             </Typography>
+          )}
         </Box>
-        <Stack direction="row" spacing={1}>
-          <Tooltip title="Refresh">
-            <IconButton size="small" onClick={loadFarmers} disabled={loading}>
+
+        <Stack 
+          direction="row" 
+          spacing={1.5}
+          sx={{ 
+            width: isSmall ? "100%" : "auto",
+            justifyContent: isSmall ? "space-between" : "flex-end"
+          }}
+        >
+          <Tooltip title="Refresh list">
+            <IconButton 
+              size={isSmall ? "medium" : "small"}
+              onClick={loadFarmers} 
+              disabled={loading}
+              sx={{
+                bgcolor: "rgba(46, 125, 50, 0.08)",
+                "&:hover": { bgcolor: "rgba(46, 125, 50, 0.15)" }
+              }}
+            >
               <RefreshIcon />
             </IconButton>
           </Tooltip>
@@ -200,58 +239,87 @@ const AdminFarmersList = () => {
             startIcon={<AddIcon />}
             variant="contained"
             onClick={openAdd}
-            sx={{ backgroundColor: "green", "&:hover": { bgcolor: "#006400" } }}
+            sx={{ 
+              backgroundColor: "green",
+              "&:hover": { bgcolor: "#006400" },
+              flex: isSmall ? 1 : "none",
+              height: isSmall ? 40 : 'auto'
+            }}
           >
-            Add Farmer
+            {isSmall ? "Add Farmer" : "Add Farmer"}
           </Button>
         </Stack>
       </Box>
 
       {feedback && (
         <Alert
-          severity={
-            feedback.toLowerCase().includes("fail") ||
-            feedback.toLowerCase().includes("error")
-              ? "error"
-              : "success"
-          }
-          sx={{ mb: 2, borderRadius: 2 }}
+          severity={feedback.toLowerCase().includes("error") ? "error" : "success"}
+          sx={{ 
+            mx: isSmall ? 2 : 0,
+            mb: 2, 
+            borderRadius: 2 
+          }}
           onClose={() => setFeedback("")}
         >
           {feedback}
         </Alert>
       )}
 
-      <Paper
+      {loadingError && (
+        <Alert
+          severity="error"
+          sx={{ 
+            mx: isSmall ? 2 : 0,
+            mb: 2, 
+            borderRadius: 2 
+          }}
+          onClose={() => setLoadingError("")}
+        >
+          {loadingError}
+        </Alert>
+      )}
+
+      <Card
+        elevation={1}
         sx={{
-          p: 2,
-          borderRadius: 3,
+          mx: isSmall ? 2 : 0,
           mb: 2,
-          display: "flex",
-          gap: 2,
-          flexWrap: "wrap",
-          alignItems: "center",
+          borderRadius: 3,
         }}
       >
-        <TextField
-          size="small"
-          label="Search (name, email, username)"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          InputProps={{
-            startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1 }} />,
-          }}
-          sx={{ flex: 1, minWidth: 240 }}
-        />
-        <Chip
-          label={`Total: ${farmers.length}`}
-          color="success"
-          variant="outlined"
-          size="small"
-        />
-      </Paper>
+        <CardContent sx={{ p: isSmall ? "12px !important" : 2 }}>
+          <Stack
+            direction={isSmall ? "column" : "row"}
+            spacing={2}
+            alignItems={isSmall ? "stretch" : "center"}
+          >
+            <TextField
+              size="small"
+              placeholder="Search by name, email, or username..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, opacity: 0.5 }} />,
+              }}
+              sx={{ 
+                flex: 1,
+                "& .MuiOutlinedInput-root": {
+                  bgcolor: "background.paper"
+                }
+              }}
+              fullWidth={isSmall}
+            />
+            <Chip
+              label={`Total: ${farmers.length}`}
+              color="success"
+              variant="outlined"
+              size="small"
+              sx={{ alignSelf: isSmall ? "flex-start" : "center" }}
+            />
+          </Stack>
+        </CardContent>
+      </Card>
 
-      {/* BIG SCREENS: original table retained */}
       {!isSmall && (
         <Paper
           sx={{
@@ -343,171 +411,175 @@ const AdminFarmersList = () => {
         </Paper>
       )}
 
-      {/* SMALL SCREENS: card layout */}
       {isSmall && (
-        <Box>
-          {loading &&
-            Array.from({ length: 4 }).map((_, i) => (
-              <Paper
-                key={i}
-                elevation={1}
-                sx={{
-                  mb: 2,
-                  p: 2,
-                  borderRadius: 3,
-                }}
-              >
-                <Skeleton variant="text" width="40%" />
-                <Skeleton variant="text" width="60%" />
-                <Skeleton variant="rectangular" height={18} sx={{ my: 1 }} />
-                <Skeleton variant="text" width="80%" />
-              </Paper>
-            ))}
+        <Box sx={{ px: 2 }}>
+          {loading && (
+            <Stack spacing={2}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} sx={{ borderRadius: 3 }}>
+                  <CardContent sx={{ p: "16px !important" }}>
+                    <Stack spacing={2}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                        <Skeleton width={120} height={24} />
+                        <Skeleton width={80} height={24} />
+                      </Box>
+                      <Skeleton width="100%" height={20} />
+                      <Grid container spacing={2}>
+                        {Array.from({ length: 4 }).map((_, j) => (
+                          <Grid item xs={6} key={j}>
+                            <Skeleton width="100%" height={40} />
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          )}
 
           {!loading && filtered.length === 0 && (
-            <Paper
+            <Card
               sx={{
                 p: 4,
                 textAlign: "center",
                 borderRadius: 3,
-                opacity: 0.7,
+                bgcolor: "rgba(0,0,0,0.02)",
               }}
             >
-              <Typography>No farmers found.</Typography>
-            </Paper>
+              <Typography color="text.secondary">
+                No farmers found
+              </Typography>
+            </Card>
           )}
 
-            {!loading &&
-              pagedData.map((f) => {
-                const fullName = (f.first_name || "") + " " + (f.last_name || "");
-                return (
-                  <Paper
-                    key={f.id}
-                    elevation={2}
-                    sx={{
-                      mb: 2,
-                      p: 2.2,
-                      borderRadius: 3,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 1.2,
-                      background:
-                        "linear-gradient(135deg,#ffffff 0%,#f6f9f6 100%)",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        gap: 1,
-                      }}
-                    >
-                      <Box>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 700, color: "green" }}
-                        >
-                          {f.username}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "text.secondary" }}
-                        >
-                          {f.email}
-                        </Typography>
+          {!loading && (
+            <Stack spacing={2}>
+              {pagedData.map((farmer) => (
+                <Card
+                  key={farmer.id}
+                  sx={{
+                    borderRadius: 3,
+                    "&:active": { transform: "scale(0.995)" },
+                    transition: "transform 0.1s",
+                  }}
+                  onClick={() => handleCardClick(farmer)}
+                >
+                  <CardContent sx={{ p: "16px !important" }}>
+                    <Stack spacing={2}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <Box>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "green" }}>
+                            {farmer.username}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {farmer.email}
+                          </Typography>
+                        </Box>
+                        <Stack direction="row" spacing={1}>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEdit(farmer);
+                            }}
+                            sx={{
+                              bgcolor: "success.soft",
+                              color: "success.main",
+                              "&:hover": { bgcolor: "success.softHover" },
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteCandidate(farmer);
+                            }}
+                            sx={{
+                              bgcolor: "error.soft",
+                              color: "error.main",
+                              "&:hover": { bgcolor: "error.softHover" },
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
                       </Box>
-                      <Stack direction="row" spacing={0.5}>
-                        <Tooltip title="Edit">
-                          <IconButton
-                            size="small"
-                            onClick={() => openEdit(f)}
-                            sx={{
-                              bgcolor: "rgba(0,128,0,0.08)",
-                              "&:hover": { bgcolor: "rgba(0,128,0,0.15)" },
-                            }}
-                          >
-                            <EditIcon fontSize="inherit" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton
-                            size="small"
-                            onClick={() => setDeleteCandidate(f)}
-                            sx={{
-                              bgcolor: "rgba(244,67,54,0.12)",
-                              "&:hover": { bgcolor: "rgba(244,67,54,0.2)" },
-                            }}
-                          >
-                            <DeleteIcon fontSize="inherit" />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </Box>
 
-                    <Divider sx={{ my: 0.5 }} />
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <PersonIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">
+                                Name
+                              </Typography>
+                              <Typography variant="body2" noWrap>
+                                {`${farmer.first_name || ''} ${farmer.last_name || ''}`.trim() || "-"}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <PhoneIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">
+                                Phone
+                              </Typography>
+                              <Typography variant="body2" noWrap>
+                                {farmer.phone_number || "-"}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <LocationOnIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">
+                                Location
+                              </Typography>
+                              <Typography variant="body2" noWrap>
+                                {farmer.location || "-"}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <AgricultureIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">
+                                Farm Size
+                              </Typography>
+                              <Typography variant="body2" noWrap>
+                                {farmer.farm_size || "-"}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </Grid>
+                      </Grid>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          )}
 
-                    <Grid container spacing={1}>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" sx={{ opacity: 0.6 }}>
-                          Name
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {fullName.trim() || "-"}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" sx={{ opacity: 0.6 }}>
-                          Phone
-                        </Typography>
-                        <Typography variant="body2">
-                          {f.phone_number || "-"}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" sx={{ opacity: 0.6 }}>
-                          Location
-                        </Typography>
-                        <Typography variant="body2">
-                          {f.location || "-"}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" sx={{ opacity: 0.6 }}>
-                          Farm Size
-                        </Typography>
-                        <Typography variant="body2">
-                          {f.farm_size || "-"}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" sx={{ opacity: 0.6 }}>
-                          Gender
-                        </Typography>
-                        <Typography variant="body2">
-                          {f.gender || "-"}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" sx={{ opacity: 0.6 }}>
-                          DOB
-                        </Typography>
-                        <Typography variant="body2">
-                          {f.date_of_birth || "-"}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </Paper>
-                );
-              })}
-
-          {/* Reuse pagination for cards */}
           <Paper
-            elevation={0}
+            elevation={3}
             sx={{
-              mt: 1,
-              borderRadius: 3,
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 1000,
+              borderRadius: "16px 16px 0 0",
               overflow: "hidden",
+              bgcolor: "background.paper",
             }}
           >
             <TablePagination
@@ -518,12 +590,114 @@ const AdminFarmersList = () => {
               page={page}
               onPageChange={(_, p) => setPage(p)}
               sx={{
-                ".MuiTablePagination-toolbar": { px: 0.5 },
+                ".MuiTablePagination-toolbar": {
+                  minHeight: 48,
+                  px: 1,
+                },
+                ".MuiTablePagination-displayedRows": {
+                  fontSize: "0.875rem",
+                },
+                ".MuiTablePagination-selectLabel": {
+                  display: "none",
+                },
+                ".MuiTablePagination-select": {
+                  display: "none",
+                },
+                ".MuiTablePagination-selectIcon": {
+                  display: "none",
+                },
               }}
             />
           </Paper>
         </Box>
       )}
+
+      <SwipeableDrawer
+        anchor="bottom"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onOpen={() => {}}
+        sx={{
+          "& .MuiDrawer-paper": {
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            maxHeight: "90vh",
+          },
+        }}
+      >
+        {selectedFarmer && (
+          <Box sx={{ p: 2 }}>
+            <Stack spacing={2}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Farmer Details
+              </Typography>
+              
+              <List disablePadding>
+                {[
+                  { icon: <PersonIcon />, label: "Username", value: selectedFarmer.username },
+                  { icon: <EmailIcon />, label: "Email", value: selectedFarmer.email },
+                  { icon: <PersonIcon />, label: "Name", value: `${selectedFarmer.first_name || ''} ${selectedFarmer.last_name || ''}`.trim() || "-" },
+                  { icon: <PhoneIcon />, label: "Phone", value: selectedFarmer.phone_number || "-" },
+                  { icon: <LocationOnIcon />, label: "Location", value: selectedFarmer.location || "-" },
+                  { icon: <AgricultureIcon />, label: "Farm Size", value: selectedFarmer.farm_size || "-" },
+                  { icon: <WcIcon />, label: "Gender", value: selectedFarmer.gender || "-" },
+                  { icon: <CalendarTodayIcon />, label: "Date of Birth", value: selectedFarmer.date_of_birth || "-" },
+                ].map((item, index) => (
+                  <React.Fragment key={item.label}>
+                    <ListItem sx={{ px: 0 }}>
+                      <Stack direction="row" spacing={2} alignItems="center" sx={{ width: "100%" }}>
+                        {React.cloneElement(item.icon, { 
+                          sx: { color: "text.secondary", fontSize: 20 } 
+                        })}
+                        <ListItemText
+                          primary={item.label}
+                          secondary={item.value}
+                          primaryTypographyProps={{ 
+                            variant: "caption",
+                            color: "text.secondary"
+                          }}
+                          secondaryTypographyProps={{ 
+                            variant: "body1",
+                            color: "text.primary"
+                          }}
+                        />
+                      </Stack>
+                    </ListItem>
+                    {index < 7 && <Divider />}
+                  </React.Fragment>
+                ))}
+              </List>
+
+              <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  color="primary"
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    openEdit(selectedFarmer);
+                  }}
+                  startIcon={<EditIcon />}
+                >
+                  Edit
+                </Button>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="error"
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    setDeleteCandidate(selectedFarmer);
+                  }}
+                  startIcon={<DeleteIcon />}
+                >
+                  Delete
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+        )}
+      </SwipeableDrawer>
 
       <FarmerFormDialog
         open={dialogOpen}
