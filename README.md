@@ -42,7 +42,21 @@ npm install @fontsource/roboto
 
 ```
 
-### 4.View agtech in the browser
+### 4.Install React App Dependencies
+
+```bash
+#Install React Router 
+npm install react-router-dom
+
+#Install axios inside your project root (same folder as package.json):
+npm install axios
+
+npm install recharts
+
+
+```
+
+### 5.View agtech in the browser
 
 ```bash
 npm start
@@ -52,3 +66,13 @@ npm start
 ## ✅ You're Live
 
 Visit < <http://192.168.0.104:3000>> to access the development server.
+
+## Demo Credentials
+
+Admin Login Details
+Email : <maryannewambui0124@gmail.com>
+password: marywam
+
+Farmer Login Details
+Email: <cecilybritney@gmail.com>
+password: wam_Ram$24
