@@ -71,8 +71,8 @@ Visit < <http://192.168.0.104:3000>> to access the development server.
 
 Admin Login Details
 Email : <maryannewambui0124@gmail.com>
-password: marywam
+password: admin@2025
 
 Farmer Login Details
-Email: <cecilybritney@gmail.com>
-password: wam_Ram$24
+Email: <nelly@gmail.com>
+password: nelly@2001
